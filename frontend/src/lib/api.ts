@@ -111,3 +111,14 @@ export interface AuthResponse {
     username: string;
     role: string;
 }
+
+export interface ContactResponse {
+    id: number;
+    name: string;
+    phone: string;
+    telegram: string;
+    subject: string;
+    message: string;
+    read: boolean;
+    createdAt: string;
+}

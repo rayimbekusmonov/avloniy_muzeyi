@@ -98,3 +98,8 @@ export const resourceService = {
     delete: (id: number) =>
         api.delete<void>(`/api/resources/${id}`),
 };
+
+export const contactService = {
+    send: (data: { name: string; phone: string; telegram: string; subject: string; message: string }) =>
+        api.post<{ message: string }>('/api/contact', data),
+};

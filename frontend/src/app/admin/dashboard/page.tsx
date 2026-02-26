@@ -8,6 +8,7 @@ const menuItems = [
     { href: '/admin/news', icon: '📰', title: 'Yangiliklar', desc: 'Yangilik qo\'shish, tahrirlash, o\'chirish' },
     { href: '/admin/gallery', icon: '🖼️', title: 'Galereya', desc: 'Rasm, video, audio boshqaruvi' },
     { href: '/admin/resources', icon: '📚', title: 'Manbalar', desc: 'E-kitob va maqolalar' },
+    { href: '/admin/contacts', icon: '✉️', title: 'Xabarlar', desc: 'Foydalanuvchilardan kelgan xabarlar' },
 ]
 
 export default function AdminDashboardPage() {
