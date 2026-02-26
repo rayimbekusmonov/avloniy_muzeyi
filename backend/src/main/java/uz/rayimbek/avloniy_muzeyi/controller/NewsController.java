@@ -33,6 +33,15 @@ public class NewsController {
         return ResponseEntity.ok(newsService.getNewsBySlug(slug));
     }
 
+    @GetMapping("/all")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Page<NewsResponse>> getAll(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size
+    ) {
+        return ResponseEntity.ok(newsService.getAllForAdmin(page, size));
+    }
+
     // ADMIN ONLY
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")

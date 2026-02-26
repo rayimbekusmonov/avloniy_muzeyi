@@ -35,6 +35,9 @@ export const newsService = {
         api.put<NewsItem>(`/api/news/${id}`, data),
     delete: (id: number) =>
         api.delete<void>(`/api/news/${id}`),
+
+    getAllForAdmin: (page = 0, size = 50) =>
+        api.get<Page<NewsItem>>(`/api/news/all?page=${page}&size=${size}`),
 };
 
 // Gallery
@@ -46,9 +49,15 @@ export const galleryService = {
     },
     getById: (id: number) =>
         api.get<GalleryItem>(`/api/gallery/${id}`),
-    create: (data: Partial<GalleryItem>) =>
+    create: (data: { title: string; fileUrl: string; thumbnailUrl: string; description: string; mediaType: string }) =>
         api.post<GalleryItem>('/api/gallery', data),
-    update: (id: number, data: Partial<GalleryItem>) =>
+    update: (id: number, data: {
+        title: string;
+        fileUrl: string;
+        thumbnailUrl: string;
+        description: string;
+        mediaType: string
+    }) =>
         api.put<GalleryItem>(`/api/gallery/${id}`, data),
     delete: (id: number) =>
         api.delete<void>(`/api/gallery/${id}`),
@@ -64,9 +73,27 @@ export const resourceService = {
     },
     getById: (id: number) =>
         api.get<ResourceItem>(`/api/resources/${id}`),
-    create: (data: Partial<ResourceItem>) =>
+    create: (data: {
+        title: string;
+        author: string;
+        description: string;
+        fileUrl: string;
+        coverUrl: string;
+        resourceType: string;
+        publishedYear: number;
+        pageCount: number
+    }) =>
         api.post<ResourceItem>('/api/resources', data),
-    update: (id: number, data: Partial<ResourceItem>) =>
+    update: (id: number, data: {
+        title: string;
+        author: string;
+        description: string;
+        fileUrl: string;
+        coverUrl: string;
+        resourceType: string;
+        publishedYear: number;
+        pageCount: number
+    }) =>
         api.put<ResourceItem>(`/api/resources/${id}`, data),
     delete: (id: number) =>
         api.delete<void>(`/api/resources/${id}`),

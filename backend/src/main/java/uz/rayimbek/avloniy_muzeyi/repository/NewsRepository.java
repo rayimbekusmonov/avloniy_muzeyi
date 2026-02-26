@@ -13,6 +13,7 @@ import java.util.Optional;
 public interface NewsRepository extends JpaRepository<News, Long> {
     Page<News> findAllByPublishedTrueOrderByCreatedAtDesc(Pageable pageable);
     Page<News> findAllByPublishedTrueAndCategoryOrderByCreatedAtDesc(News.Category category, Pageable pageable);
+    Page<News> findAllByOrderByCreatedAtDesc(Pageable pageable);
     @Query("SELECT n FROM News n LEFT JOIN FETCH n.author WHERE n.published = true ORDER BY n.createdAt DESC")
     Page<News> findAllPublishedWithAuthor(Pageable pageable);
     Optional<News> findBySlug(String slug);

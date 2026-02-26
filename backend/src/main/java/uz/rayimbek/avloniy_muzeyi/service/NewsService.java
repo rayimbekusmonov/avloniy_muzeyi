@@ -14,6 +14,7 @@ import uz.rayimbek.avloniy_muzeyi.repository.NewsRepository;
 import uz.rayimbek.avloniy_muzeyi.repository.UserRepository;
 
 import java.text.Normalizer;
+import java.util.Objects;
 import java.util.regex.Pattern;
 
 @Service
@@ -43,7 +44,7 @@ public class NewsService {
     }
 
     public NewsResponse create(NewsRequest request) {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        String username = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
         User author = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("Foydalanuvchi topilmadi"));
 
@@ -92,6 +93,11 @@ public class NewsService {
             slug = slug + "-" + System.currentTimeMillis();
         }
         return slug;
+    }
+
+    public Page<NewsResponse> getAllForAdmin(int page, int size) {
+        return newsRepository.findAllByOrderByCreatedAtDesc(PageRequest.of(page, size))
+                .map(this::toResponse);
     }
 
     private String toSlug(String input) {

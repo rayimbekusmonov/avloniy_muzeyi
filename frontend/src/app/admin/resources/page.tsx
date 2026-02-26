@@ -3,74 +3,78 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { isAuthenticated, removeToken } from '@/lib/api'
-import { newsService } from '@/lib/services'
-import { NewsItem } from '@/lib/api'
+import { resourceService } from '@/lib/services'
+import { ResourceItem } from '@/lib/api'
 
-const CATEGORIES = [
-    { value: 'KORGAZMA', label: "Ko'rgazma" },
-    { value: 'TADBIR', label: 'Tadbir' },
-    { value: 'YANGILIK', label: 'Yangilik' },
-    { value: 'BAYRAM', label: 'Bayram' },
+const RESOURCE_TYPES = [
+    { value: 'EBOOK', label: '📖 E-kitob' },
+    { value: 'ARTICLE', label: '📄 Maqola' },
+    { value: 'RESEARCH', label: '🔬 Ilmiy ish' },
 ]
 
 const emptyForm = {
     title: '',
-    content: '',
-    excerpt: '',
-    imageUrl: '',
-    category: 'YANGILIK',
-    published: false,
+    author: '',
+    description: '',
+    fileUrl: '',
+    coverUrl: '',
+    resourceType: 'EBOOK',
+    publishedYear: new Date().getFullYear(),
+    pageCount: 0,
 }
 
-export default function AdminNewsPage() {
+export default function AdminResourcesPage() {
     const router = useRouter()
-    const [news, setNews] = useState<NewsItem[]>([])
+    const [items, setItems] = useState<ResourceItem[]>([])
     const [loading, setLoading] = useState(true)
     const [showForm, setShowForm] = useState(false)
-    const [editItem, setEditItem] = useState<NewsItem | null>(null)
+    const [editItem, setEditItem] = useState<ResourceItem | null>(null)
     const [form, setForm] = useState(emptyForm)
     const [saving, setSaving] = useState(false)
     const [error, setError] = useState('')
+    const [filterType, setFilterType] = useState('')
+    const [search, setSearch] = useState('')
 
     useEffect(() => {
         if (!isAuthenticated()) {
             router.push('/admin')
             return
         }
-        fetchNews()
+        fetchItems()
     }, [router])
 
-    const fetchNews = async () => {
+    const fetchItems = async () => {
         setLoading(true)
         try {
-            // const data = await newsService.getAll(0, 50)
-            const data = await newsService.getAllForAdmin(0, 50)
-            setNews(data.content)
+            const data = await resourceService.getAll(0, 100)
+            setItems(data.content)
         } catch {
-            setError('Yangiliklar yuklanmadi')
+            setError('Manbalar yuklanmadi')
         } finally {
             setLoading(false)
         }
     }
 
-    const handleEdit = (item: NewsItem) => {
+    const handleEdit = (item: ResourceItem) => {
         setEditItem(item)
         setForm({
             title: item.title,
-            content: item.content,
-            excerpt: item.excerpt || '',
-            imageUrl: item.imageUrl || '',
-            category: item.category,
-            published: item.published,
+            author: item.author,
+            description: item.description || '',
+            fileUrl: item.fileUrl,
+            coverUrl: item.coverUrl || '',
+            resourceType: item.resourceType,
+            publishedYear: item.publishedYear || new Date().getFullYear(),
+            pageCount: item.pageCount || 0,
         })
         setShowForm(true)
     }
 
     const handleDelete = async (id: number) => {
-        if (!confirm('Yangilikni o\'chirishni tasdiqlaysizmi?')) return
+        if (!confirm('Manbani o\'chirishni tasdiqlaysizmi?')) return
         try {
-            await newsService.delete(id)
-            setNews(prev => prev.filter(n => n.id !== id))
+            await resourceService.delete(id)
+            setItems(prev => prev.filter(i => i.id !== id))
         } catch {
             setError('O\'chirishda xato yuz berdi')
         }
@@ -82,15 +86,13 @@ export default function AdminNewsPage() {
         setError('')
         try {
             if (editItem) {
-                const updated = await newsService.update(editItem.id, form)
-                setNews(prev => prev.map(n => n.id === editItem.id ? updated : n))
+                const updated = await resourceService.update(editItem.id, form)
+                setItems(prev => prev.map(i => i.id === editItem.id ? updated : i))
             } else {
-                const created = await newsService.create(form)
-                setNews(prev => [created, ...prev])
+                const created = await resourceService.create(form)
+                setItems(prev => [created, ...prev])
             }
-            setShowForm(false)
-            setEditItem(null)
-            setForm(emptyForm)
+            handleCancel()
         } catch (err: unknown) {
             setError(err instanceof Error ? err.message : 'Xato yuz berdi')
         } finally {
@@ -104,6 +106,14 @@ export default function AdminNewsPage() {
         setForm(emptyForm)
         setError('')
     }
+
+    const filtered = items
+        .filter(i => filterType ? i.resourceType === filterType : true)
+        .filter(i => search
+            ? i.title.toLowerCase().includes(search.toLowerCase()) ||
+            i.author.toLowerCase().includes(search.toLowerCase())
+            : true
+        )
 
     return (
         <div style={{ minHeight: '100vh', background: 'var(--off-white)' }}>
@@ -128,7 +138,7 @@ export default function AdminNewsPage() {
                     }}>← Dashboard</Link>
                     <div style={{ color: 'rgba(255,255,255,0.2)' }}>|</div>
                     <span style={{ fontFamily: 'var(--font-display)', fontSize: '15px', color: '#fff' }}>
-                        Yangiliklar
+                        Manbalar
                     </span>
                 </div>
                 <button
@@ -149,13 +159,51 @@ export default function AdminNewsPage() {
             <main style={{ maxWidth: '1100px', margin: '0 auto', padding: '40px 24px' }}>
 
                 {/* Top bar */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-                    <h1 style={{ fontSize: '26px', color: 'var(--navy-dark)' }}>Yangiliklar boshqaruvi</h1>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                    <h1 style={{ fontSize: '26px', color: 'var(--navy-dark)' }}>Manbalar boshqaruvi</h1>
                     <button
                         onClick={() => setShowForm(true)}
                         className="btn-primary"
                         style={{ border: 'none', cursor: 'pointer' }}
                     >+ Yangi qo'shish</button>
+                </div>
+
+                {/* Filter + Search */}
+                <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                        {[{ value: '', label: 'Barchasi' }, ...RESOURCE_TYPES].map(t => (
+                            <button
+                                key={t.value}
+                                onClick={() => setFilterType(t.value)}
+                                style={{
+                                    padding: '8px 16px',
+                                    borderRadius: '20px',
+                                    border: '1px solid',
+                                    borderColor: filterType === t.value ? 'var(--gold)' : 'rgba(27,58,107,0.2)',
+                                    background: filterType === t.value ? 'var(--gold)' : '#fff',
+                                    color: filterType === t.value ? 'var(--navy-dark)' : 'var(--gray-600)',
+                                    fontFamily: 'var(--font-mono)',
+                                    fontSize: '12px',
+                                    cursor: 'pointer',
+                                }}
+                            >{t.label}</button>
+                        ))}
+                    </div>
+                    <input
+                        value={search}
+                        onChange={e => setSearch(e.target.value)}
+                        placeholder="Qidirish..."
+                        style={{
+                            padding: '8px 16px',
+                            border: '1px solid rgba(27,58,107,0.2)',
+                            borderRadius: '20px',
+                            fontSize: '14px',
+                            fontFamily: 'var(--font-body)',
+                            outline: 'none',
+                            minWidth: '200px',
+                            background: '#fff',
+                        }}
+                    />
                 </div>
 
                 {error && (
@@ -181,72 +229,91 @@ export default function AdminNewsPage() {
                         boxShadow: 'var(--shadow-md)',
                     }}>
                         <h2 style={{ fontSize: '20px', marginBottom: '24px', color: 'var(--navy-dark)' }}>
-                            {editItem ? 'Yangilikni tahrirlash' : 'Yangi yangilik'}
+                            {editItem ? 'Manbani tahrirlash' : 'Yangi manba'}
                         </h2>
                         <form onSubmit={handleSubmit}>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
-                                <div style={{ gridColumn: '1 / -1' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
+                                <div>
                                     <label style={labelStyle}>Sarlavha *</label>
                                     <input
                                         value={form.title}
                                         onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
                                         required
                                         style={inputStyle}
-                                        placeholder="Yangilik sarlavhasi"
+                                        placeholder="Manba nomi"
                                     />
                                 </div>
                                 <div>
-                                    <label style={labelStyle}>Kategoriya *</label>
+                                    <label style={labelStyle}>Muallif *</label>
+                                    <input
+                                        value={form.author}
+                                        onChange={e => setForm(p => ({ ...p, author: e.target.value }))}
+                                        required
+                                        style={inputStyle}
+                                        placeholder="Muallif ismi"
+                                    />
+                                </div>
+                                <div>
+                                    <label style={labelStyle}>Turi *</label>
                                     <select
-                                        value={form.category}
-                                        onChange={e => setForm(p => ({ ...p, category: e.target.value }))}
+                                        value={form.resourceType}
+                                        onChange={e => setForm(p => ({ ...p, resourceType: e.target.value }))}
                                         style={inputStyle}
                                     >
-                                        {CATEGORIES.map(c => (
-                                            <option key={c.value} value={c.value}>{c.label}</option>
+                                        {RESOURCE_TYPES.map(t => (
+                                            <option key={t.value} value={t.value}>{t.label}</option>
                                         ))}
                                     </select>
                                 </div>
                                 <div>
-                                    <label style={labelStyle}>Rasm URL</label>
+                                    <label style={labelStyle}>Nashr yili</label>
                                     <input
-                                        value={form.imageUrl}
-                                        onChange={e => setForm(p => ({ ...p, imageUrl: e.target.value }))}
+                                        type="number"
+                                        value={form.publishedYear}
+                                        onChange={e => setForm(p => ({ ...p, publishedYear: Number(e.target.value) }))}
+                                        style={inputStyle}
+                                        min={1800}
+                                        max={new Date().getFullYear()}
+                                    />
+                                </div>
+                                <div>
+                                    <label style={labelStyle}>Fayl URL *</label>
+                                    <input
+                                        value={form.fileUrl}
+                                        onChange={e => setForm(p => ({ ...p, fileUrl: e.target.value }))}
+                                        required
                                         style={inputStyle}
                                         placeholder="https://..."
                                     />
                                 </div>
-                                <div style={{ gridColumn: '1 / -1' }}>
-                                    <label style={labelStyle}>Qisqa matn (excerpt)</label>
+                                <div>
+                                    <label style={labelStyle}>Muqova URL</label>
                                     <input
-                                        value={form.excerpt}
-                                        onChange={e => setForm(p => ({ ...p, excerpt: e.target.value }))}
+                                        value={form.coverUrl}
+                                        onChange={e => setForm(p => ({ ...p, coverUrl: e.target.value }))}
                                         style={inputStyle}
-                                        placeholder="Yangilik haqida qisqa ma'lumot"
+                                        placeholder="https://..."
+                                    />
+                                </div>
+                                <div>
+                                    <label style={labelStyle}>Sahifalar soni</label>
+                                    <input
+                                        type="number"
+                                        value={form.pageCount}
+                                        onChange={e => setForm(p => ({ ...p, pageCount: Number(e.target.value) }))}
+                                        style={inputStyle}
+                                        min={0}
                                     />
                                 </div>
                                 <div style={{ gridColumn: '1 / -1' }}>
-                                    <label style={labelStyle}>Kontent *</label>
+                                    <label style={labelStyle}>Tavsif</label>
                                     <textarea
-                                        value={form.content}
-                                        onChange={e => setForm(p => ({ ...p, content: e.target.value }))}
-                                        required
-                                        rows={8}
+                                        value={form.description}
+                                        onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
+                                        rows={3}
                                         style={{ ...inputStyle, resize: 'vertical' }}
-                                        placeholder="Yangilik matni..."
+                                        placeholder="Manba haqida qisqa ma'lumot"
                                     />
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                    <input
-                                        type="checkbox"
-                                        id="published"
-                                        checked={form.published}
-                                        onChange={e => setForm(p => ({ ...p, published: e.target.checked }))}
-                                        style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-                                    />
-                                    <label htmlFor="published" style={{ fontSize: '15px', color: 'var(--navy-dark)', cursor: 'pointer' }}>
-                                        Nashr qilish
-                                    </label>
                                 </div>
                             </div>
 
@@ -262,29 +329,45 @@ export default function AdminNewsPage() {
                     </div>
                 )}
 
-                {/* News list */}
+                {/* List */}
                 {loading ? (
-                    <div style={{ textAlign: 'center', padding: '60px', color: 'var(--gray-600)' }}>
-                        Yuklanmoqda...
-                    </div>
-                ) : news.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '60px', color: 'var(--gray-600)' }}>
-                        Hali yangiliklar yo'q
-                    </div>
+                    <div style={{ textAlign: 'center', padding: '60px', color: 'var(--gray-600)' }}>Yuklanmoqda...</div>
+                ) : filtered.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '60px', color: 'var(--gray-600)' }}>Hali manbalar yo'q</div>
                 ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        {news.map(item => (
+                        {filtered.map(item => (
                             <div key={item.id} style={{
                                 background: '#fff',
                                 borderRadius: '12px',
                                 padding: '20px 24px',
                                 display: 'flex',
                                 alignItems: 'center',
-                                justifyContent: 'space-between',
                                 gap: '16px',
                                 border: '1px solid rgba(27,58,107,0.08)',
                                 boxShadow: 'var(--shadow-sm)',
                             }}>
+                                {/* Cover */}
+                                <div style={{
+                                    width: '56px',
+                                    height: '72px',
+                                    borderRadius: '6px',
+                                    background: item.coverUrl ? 'transparent' : 'linear-gradient(135deg, var(--navy-dark), var(--navy))',
+                                    flexShrink: 0,
+                                    overflow: 'hidden',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                }}>
+                                    {item.coverUrl ? (
+                                        <img src={item.coverUrl} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    ) : (
+                                        <span style={{ fontSize: '24px' }}>
+                                            {item.resourceType === 'EBOOK' ? '📖' : item.resourceType === 'ARTICLE' ? '📄' : '🔬'}
+                                        </span>
+                                    )}
+                                </div>
+
                                 <div style={{ flex: 1, minWidth: 0 }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
                                         <h3 style={{
@@ -300,17 +383,18 @@ export default function AdminNewsPage() {
                                             borderRadius: '20px',
                                             fontSize: '11px',
                                             fontFamily: 'var(--font-mono)',
-                                            background: item.published ? 'rgba(34,197,94,0.12)' : 'rgba(156,163,175,0.15)',
-                                            color: item.published ? '#16a34a' : '#6b7280',
+                                            background: 'rgba(201,168,76,0.12)',
+                                            color: 'var(--gold)',
                                             whiteSpace: 'nowrap',
-                                        }}>
-                                            {item.published ? 'Nashr' : 'Qoralama'}
-                                        </span>
+                                        }}>{item.resourceType}</span>
                                     </div>
-                                    <div style={{ fontSize: '12px', color: 'var(--gray-400)', fontFamily: 'var(--font-mono)' }}>
-                                        {item.category} · {new Date(item.createdAt).toLocaleDateString('uz-UZ')}
+                                    <div style={{ fontSize: '13px', color: 'var(--gray-600)' }}>
+                                        {item.author}
+                                        {item.publishedYear ? ` · ${item.publishedYear}` : ''}
+                                        {item.pageCount ? ` · ${item.pageCount} sahifa` : ''}
                                     </div>
                                 </div>
+
                                 <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
                                     <button
                                         onClick={() => handleEdit(item)}
