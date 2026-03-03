@@ -1,11 +1,9 @@
-# 1-bosqich
-FROM maven:3.9.6-eclipse-temurin-17 AS build
+FROM eclipse-temurin:17-jdk-jammy AS build
 WORKDIR /app
 COPY . .
 RUN mvn clean package -DskipTests
 
-# 2-bosqich
-FROM eclipse-temurin:17-jre-jammy
+FROM eclipse-temurin:17-jdk-jammy
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
 EXPOSE 8080
